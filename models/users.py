@@ -1,12 +1,20 @@
 import uuid
+from enum import Enum
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import String, Numeric, ForeignKey, DateTime, Boolean, func, BigInteger, Sequence
+from sqlalchemy import String, Numeric, ForeignKey, DateTime, Boolean, func, BigInteger, Sequence, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import Base
 
 
 card_seq = Sequence("card_number_seq", start=1008000000000000)
+
+
+
+class UserRole(str, Enum):
+    CLIENT = "client"       # Oddiy mijoz (karta ochadi, pul o'tkazadi)
+    ADMIN = "admin"
+
 
 class Users(Base):
     __tablename__ = "users"
@@ -17,7 +25,11 @@ class Users(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(13), unique=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    
+    role: Mapped[UserRole] = mapped_column(
+        SQLEnum(UserRole), 
+        default=UserRole.CLIENT, 
+        nullable=False
+    )
     # Bog'lanishlar
     device_tokens: Mapped[list["DeviceToken"]] = relationship("DeviceToken", back_populates="user", cascade="all, delete-orphan")
     credit_cards: Mapped[list["CreditCard"]] = relationship("CreditCard", back_populates="user", cascade="all, delete-orphan")

@@ -1,5 +1,6 @@
 import re
 from pydantic import BaseModel, Field, field_validator
+from models.users import UserRole
 
 class UserCreate(BaseModel):
     first_name: str = Field(..., max_length=350)
@@ -22,6 +23,7 @@ class UserRead(BaseModel):
     first_name: str
     last_name: str
     phone_number: str
+    role: UserRole
     is_active: bool
 
     class Config:
