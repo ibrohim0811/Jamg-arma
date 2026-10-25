@@ -13,7 +13,7 @@ load_dotenv()
 
 # 1. Loyihangizdagi sozlamalar va Base modelini import qiling
 from core.database import Base  # Barcha modellaringiz Base ga bog'langan bo'lishi kerak
-
+from models.users import Users, DeviceToken, CreditCard, Transaction
 
 # Alembic Config obyekti (alembic.ini faylidagi qiymatlar)
 config = context.config

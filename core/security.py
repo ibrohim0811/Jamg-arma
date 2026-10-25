@@ -13,7 +13,6 @@ ALGORITHM = os.getenv("ALGORITHM")
 # Token yashash muddatlari (.env dan o'qiladi yoki standart qiymat beriladi)
 ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS"))
-
 # Parolni heshlash uchun kontekst
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -38,3 +37,12 @@ def create_refresh_token(data: dict) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_token(token: str) -> dict:
+    """Raises jwt.PyJWTError (caught by the caller) if the token is invalid or expired.
+
+    Does not check the "type" claim itself — callers must check payload["type"]
+    for the kind of token they expect (access vs refresh).
+    """
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

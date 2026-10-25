@@ -13,9 +13,11 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=True,
     connect_args={
-        # Transaction Pooler (PgBouncer) bilan ishlash uchun statement keshlashni o'chiramiz:
-        "prepared_statement_cache_size": 0,
-    }
+        # 'prepared_' ni olib tashlaymiz, faqat statement_cache_size yoziladi:
+        "statement_cache_size": 0,
+        "ssl": "require",
+    },
+    pool_pre_ping=True
 )
 
 # Async Session yaratish uchun fabrikasi

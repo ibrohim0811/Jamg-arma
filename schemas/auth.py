@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     first_name: str = Field(..., max_length=350)
     last_name: str = Field(..., max_length=350)
     phone_number: str = Field(..., description="O'zbekiston telefon raqami, masalan: +998901234567")
-
+    password: str = Field(..., min_length=6)
     @field_validator("phone_number")
     @classmethod
     def validate_phone_number(cls, v: str) -> str:
@@ -17,6 +17,14 @@ class UserCreate(BaseModel):
             raise ValueError("Telefon raqam noto'g'ri formatda. Namuna: +998901234567")
         
         return v
+
+
+class UserSaveSchema(BaseModel):
+    first_name: str = Field(..., max_length=350)
+    last_name: str = Field(..., max_length=350)
+    phone_number: str = Field(..., description="O'zbekiston telefon raqami, masalan: +998901234567")
+
+
 
 class UserRead(BaseModel):
     id: int
@@ -30,7 +38,17 @@ class UserRead(BaseModel):
         from_attributes = True
 
 
+class RefreshTokenSchema(BaseModel):
+    refresh_token: str
+
+
 
 class LoginSchema(BaseModel):
     phone_number: str
     password: str
+
+
+
+class ConfirmOTPSchema(BaseModel):
+    otp_code: int 
+    phone_number: str

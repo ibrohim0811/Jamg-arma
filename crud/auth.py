@@ -13,12 +13,13 @@ async def get_user_by_phone(db: AsyncSession, phone_number: str) -> Users | None
     result = await db.execute(select(Users).where(Users.phone_number == phone_number))
     return result.scalars().first()
 
-async def create_user(db: AsyncSession, user_in: UserCreate) -> Users:
+async def create_user(db: AsyncSession, user_in: UserCreate, hashed_password: str) -> Users:
     """Yangi foydalanuvchi yaratish"""
     db_user = Users(
         first_name=user_in.first_name,
         last_name=user_in.last_name,
-        phone_number=user_in.phone_number
+        phone_number=user_in.phone_number,
+        hashed_password=hashed_password
     )
     db.add(db_user)
     await db.commit()
