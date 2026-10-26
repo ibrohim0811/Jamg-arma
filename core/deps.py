@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from crud.auth import check_admin
 from models.users import Users
 from core.security import decode_token
 
