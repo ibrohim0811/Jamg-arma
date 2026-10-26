@@ -45,7 +45,6 @@ async def login(schema: LoginSchema, db: AsyncSession = Depends(get_db)):
     
     return {
         "message": "Muvaffaqiyatli kirildi",
-        "user_id": user.id,
         "access_token": access_token,
         "refresh_token": refresh_token
     }

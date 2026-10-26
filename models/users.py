@@ -7,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import Base
 
 
-card_seq = Sequence("card_number_seq", start=1008000000000000)
 
 
 
@@ -56,8 +55,6 @@ class CreditCard(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     card_number: Mapped[int] = mapped_column(
         BigInteger, 
-        card_seq, 
-        server_default=card_seq.next_value(), 
         unique=True, 
         index=True, 
         nullable=False
@@ -72,6 +69,13 @@ class CreditCard(Base):
     user: Mapped["Users"] = relationship("Users", back_populates="credit_cards")
     sent_transactions: Mapped[list["Transaction"]] = relationship("Transaction", foreign_keys="[Transaction.sender_card_id]", back_populates="sender_card")
     received_transactions: Mapped[list["Transaction"]] = relationship("Transaction", foreign_keys="[Transaction.receiver_card_id]", back_populates="receiver_card")
+
+    @property
+    def user_fullname(self) -> str:
+        if self.user:
+            return f"{self.user.first_name} {self.user.last_name}"
+        return "Noma'lum"
+
 
 class Transaction(Base):
     __tablename__ = "transactions"

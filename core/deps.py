@@ -43,3 +43,20 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+
+
+async def get_current_admin(
+    current_user: Users = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Users:
+    
+    # O'zingiz yozgan check_admin funksiyasini chaqiramiz
+    is_admin = await check_admin(db, current_user.id)
+    
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu amalni bajarish uchun sizda admin huquqi yo'q."
+        )
+        
+    return current_user
