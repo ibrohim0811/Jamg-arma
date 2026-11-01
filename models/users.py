@@ -9,10 +9,33 @@ from core.database import Base
 
 
 
-
 class UserRole(str, Enum):
     CLIENT = "client"       # Oddiy mijoz (karta ochadi, pul o'tkazadi)
     ADMIN = "admin"
+
+
+class CommunalTypes(str, Enum):
+    ELECTRICITY = "electricity"     # Elektr toki
+    GAS = "gas"                     # Tabiiy gaz
+    WATER = "water"                 # Suv
+    HEATING = "heating"             # Isitish tizimi
+    TRASH = "trash"                 # Chiqindi
+    HOA = "hoa"                     # Shirkat (Kvartira)
+
+
+class TelecomProvider(str, Enum):
+    BEELINE = "beeline"
+    UZMOBILE = "uzmobile"
+    UCELL = "ucell"
+    MOBIUZ = "mobiuz"
+    UZTELECOM_INTERNET = "uztelecom_internet"
+
+
+class TransactionType(str, Enum):
+    P2P = "p2p"                       # Kartadan kartaga
+    REPLENISHMENT = "replenishment"   # Hisobni to'ldirish
+    COMMUNAL = "communal"             # Kommunal to'lov (Elektr, Gaz, Suv...)
+    TELECOM = "telecom"
 
 
 class Users(Base):
@@ -82,22 +105,32 @@ class Transaction(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     
-    # Kimdan (CreditCard id ga bog'lanadi, agar tashqi manba yoki depozit bo'lsa NULL bo'lishi mumkin)
+    # Kimdan (Foydalanuvchining qaysi kartasidan pul yechildi)
     sender_card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
     
-    # Kimga
+    # Faqat P2P (kartadan kartaga) o'tkazmalar uchun:
     receiver_card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
     
     amount: Mapped[Decimal] = mapped_column(Numeric(precision=15, scale=2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="UZS", nullable=False)
     
-    # Tranzaksiya holati: pending (jarayonda), success (muvaffaqiyatli), failed (xatolik)
+    # Holati: pending, success, failed
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     
-    # Tranzaksiya turi: p2p, replenishment (hisobni to'ldirish), withdrawal (yechish)
+    # Tranzaksiya turi: p2p, communal, telecom
     transaction_type: Mapped[str] = mapped_column(String(50), default="p2p", nullable=False)
     
-    description: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Izoh / xabarnoma
+    # --- COMMUNAL VA TELECOM UCHUN MAXSUS USTUNLAR ---
+    # 1. Kommunal uchun (masalan: "electricity" yoki "gas")
+    service_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    
+    # 2. Telecom uchun (masalan: "beeline", "ucell")
+    provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    
+    # 3. Telecom uchun telefon raqam (masalan: "+998901234567")
+    recipient_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Izoh
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Bog'lanishlar

@@ -4,8 +4,8 @@ from typing import List
 
 from core.database import get_db 
 from models.users import Users  # Users modelini to'g'ri import qilamiz
-from schemas.card import CardResponse, GetCardNumberSchema
-from crud.card import create_credit_card, freeze_my_card, get_my_card, unfreeze_my_card
+from schemas.card import CardResponse, GetCardNumberSchema, CardFoundResponse
+from crud.card import create_credit_card, freeze_my_card, get_my_card, unfreeze_my_card, find_card_by_number
 from core.deps import get_current_user
 
 router = APIRouter(prefix="/cards", tags=["Credit Cards"])
@@ -76,3 +76,27 @@ async def get_user_cards(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Servis vaqtincha ishlamayabdi"
         )
+
+
+
+@router.get("/search/{card_number}", response_model=CardFoundResponse)
+async def search_card(card_number: str, db: AsyncSession = Depends(get_db)):
+    """
+    Karta raqami bo'yicha qidirib, karta va egasining ismini qaytaradi
+    (Masalan: P2P o'tkazma qilishdan oldin kimga yuborilayotganini tekshirish uchun)
+    """
+    card = await find_card_by_number(db, card_number)
+    
+    if not card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bunday raqamdagi karta topilmadi."
+        )
+    
+    if card.is_frozen:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bu karta muzlatilgan (bloklangan)."
+        )
+
+    return card

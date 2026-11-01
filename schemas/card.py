@@ -1,6 +1,7 @@
+import uuid
 from pydantic import BaseModel, Field
 from decimal import Decimal
-import uuid
+from typing import Optional
 from datetime import datetime
 
 class CardCreate(BaseModel):
@@ -19,3 +20,13 @@ class CardResponse(BaseModel):
 
 class GetCardNumberSchema(BaseModel):
     card_number: int
+
+
+
+class CardFoundResponse(BaseModel):
+    card_number: int
+    is_frozen: bool
+    user_fullname: Optional[str] = None
+
+    class Config:
+        from_attributes = True

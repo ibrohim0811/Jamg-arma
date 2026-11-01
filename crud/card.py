@@ -133,3 +133,26 @@ async def get_my_card(db: AsyncSession, user_id: int):
     stmt = select(CreditCard).options(selectinload(CreditCard.user)).where(CreditCard.user_id == user_id)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+async def find_card_by_number(db: AsyncSession, card_number_str: str) -> CreditCard | None:
+    """
+    Karta raqami bo'yicha qidirish va uning egasining ma'lumotlarini birga olish (eager loading)
+    """
+    try:
+        # Kiritilgan matnni BigInteger ga moslab int ga o'tkazamiz
+        card_number_int = int(card_number_str.strip())
+    except ValueError:
+        return None  # Agar karta raqami harflardan iborat bo'lib qolsa
+
+    # So'rovni tuzamiz (User ma'lumotlari birga kelishi uchun selectinload ishlatamiz)
+    stmt = (
+        select(CreditCard)
+        .options(selectinload(CreditCard.user))
+        .where(CreditCard.card_number == card_number_int)
+    )
+    
+    result = await db.execute(stmt)
+    card = result.scalar_one_or_none()
+    
+    return card
