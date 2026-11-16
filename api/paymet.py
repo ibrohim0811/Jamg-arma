@@ -9,3 +9,11 @@ from crud.card import create_credit_card, freeze_my_card, get_my_card, unfreeze_
 from core.deps import get_current_user
 
 
+app = APIRouter(
+    prefix="/payment",
+    tags=["Payment"]
+)
+
+@app.get("/")
+def get_payment():
+    return {"message":"OK"}

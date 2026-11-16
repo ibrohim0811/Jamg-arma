@@ -25,7 +25,11 @@ redis = Redis(url=os.getenv("UPSTASH_URL"), token=os.getenv("UPSTASH_TOKEN"))
 
 @router.post("/login")
 async def login(schema: LoginSchema, db: AsyncSession = Depends(get_db)):
-    user = await get_user_by_phone(db, phone_number=schema.phone_number)
+    try:
+        user = await get_user_by_phone(db, phone_number=schema.phone_number)
+    except Exception as e:
+        print(e)
+        return {"message":"Xizmat vaqtinchalik ishlamayapti!"}
     
     if not user:
         raise HTTPException(
