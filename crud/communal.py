@@ -1,74 +1,62 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy.future import select
+from fastapi import HTTPException, status
 from decimal import Decimal
-import uuid
 
-from models.users import Transaction, CreditCard, TransactionType
-from schemas.payment import CommunalTransactionCreate
+from models.users import CommunalPayment, CreditCard, Transaction, TransactionType
+from schemas.payment import CommunalPaymentCreate
 
-async def create_communal_payment(db: AsyncSession, payment_data: CommunalTransactionCreate) -> Transaction:
-    """
-    Kommunal to'lov uchun tranzaksiya yaratish va balansdan pul yechish.
-    """
-    # 1. Yechib olinadigan kartani topamiz
-    result = await db.execute(
-        select(CreditCard).where(CreditCard.id == payment_data.sender_card_id)
+async def pay_communal_service(db: AsyncSession, payment_in: CommunalPaymentCreate, user_id: int) -> CommunalPayment:
+    # 1. Karta mavjudligini va foydalanuvchiga tegishliligini tekshirish
+    card_result = await db.execute(
+        select(CreditCard).filter(CreditCard.id == payment_in.card_id, CreditCard.user_id == user_id)
     )
-    sender_card = result.scalars().first()
+    card = card_result.scalars().first()
+    if not card:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Karta topilmadi")
     
-    if not sender_card:
-        raise ValueError("Karta topilmadi!")
+    if card.is_frozen:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Karta muzlatilgan")
     
-    if sender_card.is_frozen:
-        raise ValueError("Karta muzlatilgan!")
-        
-    if sender_card.balance < payment_data.amount:
-        raise ValueError("Kartada yetarli mablag' mavjud emas!")
+    if card.balance < payment_in.amount:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Kartada mablag' yetarli emas")
 
-    # 2. Balansdan pulni ayiramiz
-    sender_card.balance -= payment_data.amount
+    # 2. Balansdan pulni yechish
+    card.balance -= payment_in.amount
 
-    # 3. Tranzaksiya obyektini yaratamiz
-    new_transaction = Transaction(
-        id=uuid.uuid4(),
-        sender_card_id=payment_data.sender_card_id,
-        receiver_card_id=None,  # Kommunal uchun qabul qiluvchi karta yo'q
-        amount=payment_data.amount,
+    # 3. Tranzaksiya yaratish (Sizning Transaction modelingizga moslab)
+    db_transaction = Transaction(
+        sender_card_id=card.id,
+        receiver_card_id=None,
+        amount=payment_in.amount,
         currency="UZS",
-        status="success",  # To'g'ridan-to'g'ri muvaffaqiyatli deb olamiz yoki pending
+        status="success",
         transaction_type=TransactionType.COMMUNAL,
-        service_type=payment_data.service_type,
-        description=payment_data.description or f"Kommunal to'lov: {payment_data.service_type}"
+        service_type=payment_in.service_type.value,
+        description=f"{payment_in.provider_name} ga kommunal to'lov. Hisob raqam: {payment_in.account_number}"
     )
+    db.add(db_transaction)
+    await db.flush()  # Transaction ID hosil bo'lishi uchun flush qilamiz
 
-    db.add(new_transaction)
-    await db.commit()
-    await db.refresh(new_transaction)
+    # 4. Communal payment tarixini saqlash
+    db_communal = CommunalPayment(
+        user_id=user_id,
+        card_id=card.id,
+        transaction_id=db_transaction.id,
+        service_type=payment_in.service_type,
+        provider_name=payment_in.provider_name,
+        account_number=payment_in.account_number,
+        amount=payment_in.amount,
+        status="success"
+    )
+    db.add(db_communal)
     
-    return new_transaction
+    await db.commit()
+    await db.refresh(db_communal)
+    return db_communal
 
-
-async def get_user_communal_transactions(db: AsyncSession, card_ids: list[uuid.UUID], skip: int = 0, limit: int = 10) -> list[Transaction]:
-    """
-    Foydalanuvchi kartalariga tegishli barcha kommunal to'lovlar tarixini olish.
-    """
+async def get_user_communal_history(db: AsyncSession, user_id: int):
     result = await db.execute(
-        select(Transaction)
-        .where(
-            Transaction.transaction_type == TransactionType.COMMUNAL,
-            Transaction.sender_card_id.in_(card_ids)
-        )
-        .offset(skip)
-        .limit(limit)
+        select(CommunalPayment).filter(CommunalPayment.user_id == user_id).order_by(CommunalPayment.created_at.desc())
     )
     return result.scalars().all()
-
-
-async def get_transaction_by_id(db: AsyncSession, transaction_id: uuid.UUID) -> Transaction | None:
-    """
-    ID bo'yicha tranzaksiyani topish.
-    """
-    result = await db.execute(
-        select(Transaction).where(Transaction.id == transaction_id)
-    )
-    return result.scalars().first()

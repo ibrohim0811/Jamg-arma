@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.auth import router as auth
 from api.device import router as device
 from api.card import router as card
-from api.paymet import app as payment
+from api.payment import router as payment
 app = FastAPI()
 
 app.add_middleware(

@@ -136,3 +136,32 @@ class Transaction(Base):
     # Bog'lanishlar
     sender_card: Mapped["CreditCard"] = relationship("CreditCard", foreign_keys=[sender_card_id], back_populates="sent_transactions")
     receiver_card: Mapped["CreditCard"] = relationship("CreditCard", foreign_keys=[receiver_card_id], back_populates="received_transactions")
+
+
+class CommunalPayment(Base):
+    __tablename__ = "communal_payments"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    
+    # Qaysi kartadan to'lov qilingani
+    card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
+    
+    # Tranzaksiya bilan bog'liqligi (Pul yechilgandan keyin transaction.id shu yerga yoziladi)
+    transaction_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
+
+    # Kommunal turi: electricity, gas, water, heating, trash, hoa
+    service_type: Mapped[CommunalTypes] = mapped_column(SQLEnum(CommunalTypes), nullable=False)
+    
+    provider_name: Mapped[str] = mapped_column(String(150), nullable=False)  # Masalan: "Tashkent Power", "Hududgaz"
+    account_number: Mapped[str] = mapped_column(String(50), index=True, nullable=False)  # Shaxsiy hisob raqam (LS)
+    
+    amount: Mapped[Decimal] = mapped_column(Numeric(precision=15, scale=2), nullable=False)  # To'lov summasi
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)  # pending, success, failed
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Bog'lanishlar
+    user: Mapped["Users"] = relationship("Users")
+    card: Mapped["CreditCard"] = relationship("CreditCard")
+    transaction: Mapped["Transaction"] = relationship("Transaction")
