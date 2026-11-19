@@ -1,7 +1,7 @@
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models import DeviceToken  # O'zingning model importing
+from models.users import DeviceToken  # O'zingning model importing
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
