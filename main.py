@@ -8,6 +8,7 @@ from api.communal import router as payment
 from api.telecom import router as telecom
 from api.p2p import router as p2p
 from api.transaction import router as transaction
+from api.currency import app as currency
 
 app = FastAPI()
 
@@ -26,6 +27,7 @@ app.include_router(payment)
 app.include_router(p2p)
 app.include_router(telecom)
 app.include_router(transaction)
+app.include_router(currency)
 
 
 @app.get("/")
