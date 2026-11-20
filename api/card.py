@@ -4,9 +4,10 @@ from typing import List
 
 from core.database import get_db 
 from models.users import Users  # Users modelini to'g'ri import qilamiz
-from schemas.card import CardResponse, GetCardNumberSchema, CardFoundResponse
+from schemas.card import CardResponse, GetCardNumberSchema, CardFoundResponse, CardTopUpRequest, CardTopUpResponse
 from crud.card import create_credit_card, freeze_my_card, get_my_card, unfreeze_my_card, find_card_by_number
 from core.deps import get_current_user
+from crud.card import top_up_card
 
 router = APIRouter(prefix="/cards", tags=["Credit Cards"])
 
@@ -100,3 +101,19 @@ async def search_card(card_number: str, db: AsyncSession = Depends(get_db)):
         )
 
     return card
+
+
+
+@router.post("/topup", response_model=CardTopUpResponse)
+async def card_topup_endpoint(
+    payload: CardTopUpRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Users = Depends(get_current_user),
+):
+    return await top_up_card(
+        db=db,
+        current_user=current_user,
+        card_id=payload.card_id,
+        amount=payload.amount,
+        description=payload.description,
+    )

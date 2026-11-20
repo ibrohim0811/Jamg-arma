@@ -156,3 +156,76 @@ async def find_card_by_number(db: AsyncSession, card_number_str: str) -> CreditC
     card = result.scalar_one_or_none()
     
     return card
+
+
+import uuid
+from decimal import Decimal
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, status
+
+from models import CreditCard, Transaction, TransactionType, Users  # o'z import yo'lingga mosla
+
+
+async def top_up_card(
+    db: AsyncSession,
+    current_user: Users,
+    card_id: uuid.UUID,
+    amount: Decimal,
+    description: str | None = "Kartani to'ldirish",
+) -> dict:
+    if amount <= Decimal("0.00"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Summa 0 dan katta bo'lishi kerak",
+        )
+
+    # Kartani lock bilan olish (parallel so'rovlarda balans buzilmasligi uchun)
+    stmt = (
+        select(CreditCard)
+        .where(CreditCard.id == card_id, CreditCard.user_id == current_user.id)
+        .with_for_update()
+    )
+    result = await db.execute(stmt)
+    card = result.scalar_one_or_none()
+
+    if not card:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Karta topilmadi yoki sizga tegishli emas",
+        )
+
+    if card.is_frozen:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Karta muzlatilgan, to'ldirib bo'lmaydi",
+        )
+
+    # Balansni yangilash
+    card.balance = (Decimal(str(card.balance)) + amount).quantize(Decimal("0.01"))
+
+    # Tranzaksiya yaratish
+    transaction = Transaction(
+        sender_card_id=None,
+        receiver_card_id=card.id,
+        amount=amount.quantize(Decimal("0.01")),
+        currency="UZS",
+        status="success",
+        transaction_type=TransactionType.REPLENISHMENT.value,
+        description=description or "Kartani to'ldirish",
+    )
+    db.add(transaction)
+
+    await db.commit()
+    await db.refresh(card)
+    await db.refresh(transaction)
+
+    return {
+        "transaction_id": transaction.id,
+        "card_id": card.id,
+        "amount": transaction.amount,
+        "new_balance": card.balance,
+        "status": transaction.status,
+        "transaction_type": transaction.transaction_type,
+        "created_at": transaction.created_at,
+    }
