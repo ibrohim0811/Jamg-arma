@@ -164,7 +164,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
-from models import CreditCard, Transaction, TransactionType, Users  # o'z import yo'lingga mosla
+from models.users import CreditCard, Transaction, TransactionType, Users  # o'z import yo'lingga mosla
 
 
 async def top_up_card(
