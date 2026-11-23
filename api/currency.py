@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any
 import httpx
@@ -39,12 +40,12 @@ async def get_crypto():
     """BTC va USDT bozor ma'lumotlarini (narx, 24h o'zgarish, volume) qaytaradi."""
     async with httpx.AsyncClient() as client:
         try:
-            btc_ticker = await fetch_json(
+            btc_task = fetch_json(
                 client,
-                "https://api.binance.com/api/v3/ticker/24hr",
+                "https://data-api.binance.vision/api/v3/ticker/24hr",
                 params={"symbol": "BTCUSDT"},
             )
-            usdt_data = await fetch_json(
+            usdt_task = fetch_json(
                 client,
                 "https://api.coingecko.com/api/v3/simple/price",
                 params={
@@ -54,6 +55,7 @@ async def get_crypto():
                     "include_24hr_vol": "true",
                 },
             )
+            btc_ticker, usdt_data = await asyncio.gather(btc_task, usdt_task)
             tether = usdt_data.get("tether", {})
             return {
                 "BTC": {
@@ -112,9 +114,11 @@ async def get_stocks(symbols: str = Query(default="AAPL,MSFT,NVDA,GOOGL,TSLA")):
 @app.get("/market")
 async def get_all_market(base: str = Query(default="USD", min_length=3, max_length=3)):
     """Barcha ma'lumotlarni (valyuta, BTC/USDT, aksiyalar) bitta javobda qaytaradi."""
-    currencies = await get_currencies(base=base)
-    crypto = await get_crypto()
-    stocks = await get_stocks()
+    currencies, crypto, stocks = await asyncio.gather(
+        get_currencies(base=base),
+        get_crypto(),
+        get_stocks(),
+    )
     return {
         "currencies": currencies,
         "crypto": crypto,
