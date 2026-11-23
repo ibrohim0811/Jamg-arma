@@ -10,6 +10,8 @@ from api.p2p import router as p2p
 from api.transaction import router as transaction
 from api.currency import app as currency
 
+from services.ai import router as ai
+
 app = FastAPI()
 
 app.add_middleware(
@@ -28,6 +30,7 @@ app.include_router(p2p)
 app.include_router(telecom)
 app.include_router(transaction)
 app.include_router(currency)
+app.include_router(ai)
 
 
 @app.get("/")
