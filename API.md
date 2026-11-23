@@ -1,6 +1,6 @@
 # Jamg'arma API hujjati
 
-Jamg'arma - mobil ilova uchun backend: foydalanuvchi ro'yxatdan o'tadi, karta ochadi, kartani to'ldiradi, kartadan kartaga pul o'tkazadi, kommunal va mobil aloqa uchun to'lov qiladi, valyuta/kripto/aksiya kurslarini ko'radi.
+Jamg'arma - mobil ilova uchun backend: foydalanuvchi ro'yxatdan o'tadi, karta ochadi, kartani to'ldiradi, kartadan kartaga pul o'tkazadi, kommunal va mobil aloqa uchun to'lov qiladi, valyuta/kripto/aksiya kurslarini ko'radi, AI yordamchi bilan suhbatlashadi.
 
 | | |
 |---|---|
@@ -30,9 +30,10 @@ Swagger UI: `GET /docs`, ReDoc: `GET /redoc`, OpenAPI sxema: `GET /openapi.json`
 10. [Mobil aloqa / internet to'lovi](#10-mobil-aloqa--internet-tolovi)
 11. [Tranzaksiyalar tarixi](#11-tranzaksiyalar-tarixi)
 12. [Bozor ma'lumotlari (valyuta, kripto, aksiya)](#12-bozor-malumotlari-valyuta-kripto-aksiya)
-13. [Enum qiymatlari](#13-enum-qiymatlari)
-14. [Tashqi servislar va muhit o'zgaruvchilari](#14-tashqi-servislar-va-muhit-ozgaruvchilari)
-15. [Ma'lum muammolar va eslatmalar](#15-malum-muammolar-va-eslatmalar)
+13. [AI yordamchi](#13-ai-yordamchi)
+14. [Enum qiymatlari](#14-enum-qiymatlari)
+15. [Tashqi servislar va muhit o'zgaruvchilari](#15-tashqi-servislar-va-muhit-ozgaruvchilari)
+16. [Ma'lum muammolar va eslatmalar](#16-malum-muammolar-va-eslatmalar)
 
 ---
 
@@ -122,7 +123,7 @@ Validatsiya xatosi (`422`) - maydonlar bo'yicha ro'yxat:
 | `403` | Huquq yetarli emas (admin dependency mavjud, hozircha endpointda ishlatilmagan) |
 | `404` | Karta yoki token topilmadi |
 | `422` | So'rov tanasi/parametrlari validatsiyadan o'tmadi |
-| `502` / `503` | Tashqi servis (SMS, valyuta/kripto API) yoki ma'lumotlar bazasi bilan muammo |
+| `502` / `503` | Tashqi servis (SMS, valyuta/kripto API, AI) yoki ma'lumotlar bazasi bilan muammo |
 
 > **Pul summalari:** `amount` va `balance` maydonlari `Decimal` (2 xonali). Javobda ular odatda **string** ko'rinishida keladi (masalan `"50000.00"`). So'rovda son yoki string yuborish mumkin. Valyuta har doim `UZS`.
 
@@ -157,6 +158,8 @@ Validatsiya xatosi (`422`) - maydonlar bo'yicha ro'yxat:
 | GET | `/info/crypto` | - | BTC va USDT bozor ma'lumotlari |
 | GET | `/info/stocks` | - | Aksiyalar narxi (Finnhub) |
 | GET | `/info/market` | - | Yuqoridagi uchalasi bitta javobda |
+| POST | `/ai/analyze` | + | Tranzaksiyalarni AI bilan tahlil qilish (hozir ishlamaydi, 16-bo'lim 10-band) |
+| POST | `/ai/chat` | + | AI yordamchi bilan suhbat |
 
 `/cards/` va `/transactions/` oxiridagi `/` bilan yoziladi (`/cards` yuborilsa 307 redirect bo'ladi).
 
@@ -503,7 +506,7 @@ O'z kartangizdan boshqa kartaga pul o'tkazadi. Auth kerak.
 | 404 | `Qabul qiluvchi karta raqami topilmadi` |
 | 400 | `Qabul qiluvchi karta muzlatilgan` |
 
-> **Diqqat:** hozirgi kodda bu endpoint push-xabar yuborish qismida xato beradi (qarang: [15-bo'lim](#15-malum-muammolar-va-eslatmalar), 1-band). Pul o'tkazmasi bazaga yoziladi, lekin javob `500` bo'lib qolishi mumkin.
+> **Diqqat:** hozirgi kodda bu endpoint push-xabar yuborish qismida xato beradi (qarang: [16-bo'lim](#16-malum-muammolar-va-eslatmalar), 1-band). Pul o'tkazmasi bazaga yoziladi, lekin javob `500` bo'lib qolishi mumkin.
 
 ---
 
@@ -750,7 +753,64 @@ Uchala ma'lumotni bitta javobda beradi: `{"currencies": ..., "crypto": ..., "sto
 
 ---
 
-## 13. Enum qiymatlari
+## 13. AI yordamchi
+
+Groq API (OpenAI-mos `chat/completions`, model `openai/gpt-oss-120b`) orqali ishlaydi. Ikkala endpoint ham auth talab qiladi. Javoblar o'zbek tilida qaytishi uchun system prompt berilgan. Groq so'rovi 25 soniya timeout bilan yuboriladi.
+
+### POST `/ai/analyze`
+
+> **Hozir ishlamaydi.** Kod `Transaction.user_id` va `tx.type` dan foydalanadi, lekin modelda bunday maydonlar yo'q (`user_id` umuman yo'q, tur `transaction_type` deb nomlangan). Natijada endpoint `500` qaytaradi. Tafsilot: 16-bo'lim, 10-band. Quyida endpoint tuzatilgandan keyingi kutilgan xatti-harakat yozilgan.
+
+Foydalanuvchining oxirgi 40 ta tranzaksiyasini AI ga yuborib, qisqa hisobot oladi: umumiy kirim/chiqim, asosiy xarajat yo'nalishlari va 2 ta tavsiya. Body yo'q.
+
+**200 OK**
+
+```json
+{ "analysis": "1) Umumiy kirim va chiqim: ..." }
+```
+
+Tranzaksiya bo'lmasa ham `200`: `{"analysis": "Tahlil qilish uchun hali tranzaksiyalar mavjud emas."}`.
+
+### POST `/ai/chat`
+
+Jamg'arma yordamchisi bilan oddiy suhbat.
+
+**Body**
+
+| Maydon | Tur | Izoh |
+|---|---|---|
+| `message` | string | majburiy, foydalanuvchi xabari |
+| `history` | array, ixtiyoriy | oldingi xabarlar `[{"role": "user" \| "assistant", "content": "..."}]`. Faqat oxirgi 10 tasi olinadi |
+
+```json
+{
+  "message": "Pulni qanday tejash mumkin?",
+  "history": [
+    { "role": "user", "content": "Salom" },
+    { "role": "assistant", "content": "Salom! Qanday yordam bera olaman?" }
+  ]
+}
+```
+
+**200 OK**
+
+```json
+{ "reply": "Oylik xarajatlaringizni kategoriyalarga ajratib ..." }
+```
+
+`history` dagi `role` qiymatlari tekshirilmaydi, shuning uchun client faqat `user` va `assistant` yuborishi kerak (`system` yuborilsa, u AI ko'rsatmasiga aralashadi).
+
+**Xatolar (ikkala endpoint uchun)**
+
+| Kod | detail |
+|---|---|
+| 500 | `GROQ_API_KEY topilmadi` (muhit o'zgaruvchisi o'rnatilmagan) |
+| 502 | `Groq xatosi: ...` (Groq `4xx/5xx` qaytardi, masalan limit oshdi) |
+| 502 | `Tarmoq xatosi: ...` (ulanish yoki timeout) |
+
+---
+
+## 14. Enum qiymatlari
 
 | Enum | Qiymatlar |
 |---|---|
@@ -762,7 +822,7 @@ Uchala ma'lumotni bitta javobda beradi: `{"currencies": ..., "crypto": ..., "sto
 
 ---
 
-## 14. Tashqi servislar va muhit o'zgaruvchilari
+## 15. Tashqi servislar va muhit o'zgaruvchilari
 
 | Servis | Nima uchun |
 |---|---|
@@ -773,6 +833,7 @@ Uchala ma'lumotni bitta javobda beradi: `{"currencies": ..., "crypto": ..., "sto
 | Binance (`data-api.binance.vision`) | BTC/USDT ma'lumoti (`/info/crypto`) |
 | CoinGecko | USDT ma'lumoti (`/info/crypto`) |
 | Finnhub (`finnhub.io`) | Aksiyalar narxi (`/info/stocks`), kalit kerak |
+| Groq (`api.groq.com`) | AI yordamchi (`/ai/*`), kalit kerak |
 | PostgreSQL | Asosiy ma'lumotlar bazasi (SSL majburiy) |
 
 `.env` fayli kalitlari (qiymatlarni repoga qo'shmang; `.env.example` da hozircha faqat `SECRET_KEY`, `DATABASE_URL`, `ALGORITHM` va token muddatlari bor, qolganlarini qo'shib qo'yish kerak):
@@ -784,13 +845,14 @@ UPSTASH_URL, UPSTASH_TOKEN
 AUTHENTICATOR_SERVICE_ID, AUTHENTICATOR_SERVICE_TOKEN, AUTHENTICATOR_ACCESS_TOKEN
 SMTP_APP_PASSWORD
 FINNHUB_API_KEY   (ixtiyoriy; yo'q bo'lsa /info/stocks ma'lumotsiz javob beradi)
+GROQ_API_KEY      (/ai/* uchun majburiy; yo'q bo'lsa 500)
 ```
 
 Ma'lumotlar bazasi migratsiyalari Alembic orqali: `alembic upgrade head`.
 
 ---
 
-## 15. Ma'lum muammolar va eslatmalar
+## 16. Ma'lum muammolar va eslatmalar
 
 Hujjat kod asosida yozilgan. Quyidagilar kodni o'qish paytida topilgan, client yozayotganda yoki keyingi ishda e'tibor berish kerak:
 
@@ -811,3 +873,9 @@ Hujjat kod asosida yozilgan. Quyidagilar kodni o'qish paytida topilgan, client y
 8. **Karta ro'yxati.** `GET /cards/` har doim ro'yxat qaytaradi, kartasi yo'q foydalanuvchiga `404` emas, `[]` keladi.
 
 9. **`/info/*` ochiq va keshlanmaydi.** Har so'rov tashqi API'larga boradi, shuning uchun CoinGecko/Finnhub bepul limitlariga tez yetib borish mumkin va Vercel'dagi 30 soniyalik limitga ta'sir qiladi. Kesh (masalan Redis'da 30-60 soniya) qo'shish tavsiya etiladi.
+
+10. **`POST /ai/analyze` ishlamaydi.** `services/ai.py` da `Transaction.user_id` filtri va `tx.type` ishlatilgan, lekin `Transaction` modelida `user_id` ham, `type` ham yo'q: tranzaksiya foydalanuvchiga `sender_card_id` / `receiver_card_id` orqali (kartalar `credit_cards.user_id` ni saqlaydi) bog'lanadi, tur esa `transaction_type`. Endpoint `AttributeError` bilan `500` beradi. Tuzatish: `crud/transaction.py` dagi `get_user_transactions` ni qayta ishlatib, `tx.transaction_type` ni yuborish. Bir vaqtda `service_type`/`provider` ni ham qo'shish AI tahlilini aniqroq qiladi.
+
+11. **AI endpointlarida cheklov yo'q.** `/ai/chat` va `/ai/analyze` har so'rovda pullik/limitli Groq API'ga boradi, foydalanuvchi bo'yicha rate limit yo'q. `message` va `history` uzunligi ham cheklanmagan. Bundan tashqari `/ai/analyze` foydalanuvchining moliyaviy ma'lumotini (summa, tur, sana) uchinchi tomon servisiga yuboradi; buni foydalanuvchiga ma'lum qilish tavsiya etiladi.
+
+12. **AI kodi `services/` papkasida.** `services/ai.py` ichida `APIRouter` bor (boshqa routerlar `api/` da). Ishlashga ta'sir qilmaydi, faqat struktura nomuvofiqligi.
