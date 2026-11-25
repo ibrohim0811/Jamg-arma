@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from decimal import Decimal
-import uuid
 # Communal model faylingizdagi TelecomProvider enum'ini import qilasiz
 from models.users import TelecomProvider 
 

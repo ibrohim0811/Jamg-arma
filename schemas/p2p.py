@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from decimal import Decimal
-import uuid
 
 class P2PTransferCreate(BaseModel):
     sender_card_id: str

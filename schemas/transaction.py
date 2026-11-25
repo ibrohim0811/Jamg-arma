@@ -1,10 +1,9 @@
 from pydantic import BaseModel
 from decimal import Decimal
-import uuid
 from datetime import datetime
 
 class TransactionResponse(BaseModel):
-    id: uuid.UUID
+    id: str
     sender_card_id: str | None
     receiver_card_id: str | None
     amount: Decimal

@@ -158,7 +158,6 @@ async def find_card_by_number(db: AsyncSession, card_number_str: str) -> CreditC
     return card
 
 
-import uuid
 from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -170,7 +169,7 @@ from models.users import CreditCard, Transaction, TransactionType, Users  # o'z 
 async def top_up_card(
     db: AsyncSession,
     current_user: Users,
-    card_id: uuid.UUID,
+    card_id: str,
     amount: Decimal,
     description: str | None = "Kartani to'ldirish",
 ) -> dict:
@@ -221,8 +220,8 @@ async def top_up_card(
     await db.refresh(transaction)
 
     return {
-        "transaction_id": transaction.id,
-        "card_id": card.id,
+        "transaction_id": str(transaction.id),
+        "card_id": str(card.id),
         "amount": transaction.amount,
         "new_balance": card.balance,
         "status": transaction.status,
