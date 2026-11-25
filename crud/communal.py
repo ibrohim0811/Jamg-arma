@@ -55,6 +55,8 @@ async def pay_communal_service(db: AsyncSession, payment_in: CommunalPaymentCrea
     await db.refresh(db_communal)
     return db_communal
 
+
+
 async def get_user_communal_history(db: AsyncSession, user_id: int):
     result = await db.execute(
         select(CommunalPayment).filter(CommunalPayment.user_id == user_id).order_by(CommunalPayment.created_at.desc())

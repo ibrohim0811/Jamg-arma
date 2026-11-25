@@ -5,8 +5,8 @@ from datetime import datetime
 
 class TransactionResponse(BaseModel):
     id: uuid.UUID
-    sender_card_id: uuid.UUID | None
-    receiver_card_id: uuid.UUID | None
+    sender_card_id: str | None
+    receiver_card_id: str | None
     amount: Decimal
     currency: str
     status: str

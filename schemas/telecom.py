@@ -5,7 +5,7 @@ import uuid
 from models.users import TelecomProvider 
 
 class TelecomPaymentCreate(BaseModel):
-    card_id: uuid.UUID
+    card_id: str
     provider: TelecomProvider
     recipient_phone: str = Field(..., max_length=20)  # Masalan: "+998901234567"
     amount: Decimal = Field(..., gt=0)

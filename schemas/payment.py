@@ -6,7 +6,7 @@ from models.users import CommunalTypes
 # CommunalTypes ni o'zingizning enum joylashgan fayldan import qilasiz
 
 class CommunalPaymentCreate(BaseModel):
-    card_id: uuid.UUID
+    card_id: str
     service_type: CommunalTypes
     provider_name: str = Field(..., max_length=150)
     account_number: str = Field(..., max_length=50)
@@ -15,7 +15,7 @@ class CommunalPaymentCreate(BaseModel):
 class CommunalPaymentResponse(BaseModel):
     id: uuid.UUID
     user_id: int
-    card_id: uuid.UUID | None
+    card_id: str
     transaction_id: uuid.UUID | None
     service_type: CommunalTypes
     provider_name: str

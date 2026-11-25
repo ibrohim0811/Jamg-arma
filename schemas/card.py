@@ -34,7 +34,7 @@ class CardFoundResponse(BaseModel):
 
 
 class CardTopUpRequest(BaseModel):
-    card_id: uuid.UUID
+    card_id: str
     amount: Decimal = Field(..., gt=Decimal("0.00"), max_digits=15, decimal_places=2)
     description: str | None = Field(default="Kartani to'ldirish", max_length=255)
 
@@ -43,7 +43,7 @@ class CardTopUpResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     transaction_id: uuid.UUID
-    card_id: uuid.UUID
+    card_id: str
     amount: Decimal
     new_balance: Decimal
     status: str

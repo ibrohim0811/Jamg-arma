@@ -36,6 +36,8 @@ class TransactionType(str, Enum):
     REPLENISHMENT = "replenishment"   # Hisobni to'ldirish
     COMMUNAL = "communal"             # Kommunal to'lov (Elektr, Gaz, Suv...)
     TELECOM = "telecom"
+    ATTO = "atto"
+
 
 
 class Users(Base):
