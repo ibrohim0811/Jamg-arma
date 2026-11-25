@@ -108,10 +108,10 @@ class Transaction(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     
     # Kimdan (Foydalanuvchining qaysi kartasidan pul yechildi)
-    sender_card_id: Mapped[str | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
+    sender_card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
     
     # Faqat P2P (kartadan kartaga) o'tkazmalar uchun:
-    receiver_card_id: Mapped[str | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
+    receiver_card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("credit_cards.id", ondelete="SET NULL"), nullable=True)
     
     amount: Mapped[Decimal] = mapped_column(Numeric(precision=15, scale=2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="UZS", nullable=False)

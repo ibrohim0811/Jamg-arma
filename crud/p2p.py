@@ -5,13 +5,16 @@ from decimal import Decimal
 
 from models.users import CreditCard, Transaction, TransactionType
 from schemas.p2p import P2PTransferCreate
+from crud.card import get_user_card_by_identifier
 
 async def make_p2p_transfer(db: AsyncSession, transfer_in: P2PTransferCreate, user_id: int) -> Transaction:
     # 1. Yuboruvchi kartasini tekshirish
-    sender_card_result = await db.execute(
-        select(CreditCard).filter(CreditCard.id == transfer_in.sender_card_id, CreditCard.user_id == user_id)
+    sender_card = await get_user_card_by_identifier(
+        db=db,
+        user_id=user_id,
+        card_identifier=transfer_in.sender_card_id,
+        for_update=True,
     )
-    sender_card = sender_card_result.scalars().first()
     if not sender_card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Yuboruvchi kartasi topilmadi")
     

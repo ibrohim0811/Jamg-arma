@@ -5,13 +5,16 @@ from decimal import Decimal
 
 from models.users import CommunalPayment, CreditCard, Transaction, TransactionType
 from schemas.payment import CommunalPaymentCreate
+from crud.card import get_user_card_by_identifier
 
 async def pay_communal_service(db: AsyncSession, payment_in: CommunalPaymentCreate, user_id: int) -> CommunalPayment:
     # 1. Karta mavjudligini va foydalanuvchiga tegishliligini tekshirish
-    card_result = await db.execute(
-        select(CreditCard).filter(CreditCard.id == payment_in.card_id, CreditCard.user_id == user_id)
+    card = await get_user_card_by_identifier(
+        db=db,
+        user_id=user_id,
+        card_identifier=payment_in.card_id,
+        for_update=True,
     )
-    card = card_result.scalars().first()
     if not card:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Karta topilmadi")
     

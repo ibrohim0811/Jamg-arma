@@ -158,12 +158,43 @@ async def find_card_by_number(db: AsyncSession, card_number_str: str) -> CreditC
     return card
 
 
+import uuid
 from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from models.users import CreditCard, Transaction, TransactionType, Users  # o'z import yo'lingga mosla
+
+
+async def get_user_card_by_identifier(
+    db: AsyncSession,
+    user_id: int,
+    card_identifier: str,
+    for_update: bool = False,
+) -> CreditCard | None:
+    """Foydalanuvchi kartasini UUID (id) yoki 16 xonali karta raqami (card_number) orqali topish."""
+    cleaned = str(card_identifier).strip()
+    if not cleaned:
+        return None
+
+    condition = None
+    try:
+        card_uuid = uuid.UUID(cleaned)
+        condition = CreditCard.id == card_uuid
+    except ValueError:
+        if cleaned.isdigit():
+            condition = CreditCard.card_number == int(cleaned)
+
+    if condition is None:
+        return None
+
+    stmt = select(CreditCard).where(condition, CreditCard.user_id == user_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def top_up_card(
@@ -180,13 +211,12 @@ async def top_up_card(
         )
 
     # Kartani lock bilan olish (parallel so'rovlarda balans buzilmasligi uchun)
-    stmt = (
-        select(CreditCard)
-        .where(CreditCard.id == card_id, CreditCard.user_id == current_user.id)
-        .with_for_update()
+    card = await get_user_card_by_identifier(
+        db=db,
+        user_id=current_user.id,
+        card_identifier=card_id,
+        for_update=True,
     )
-    result = await db.execute(stmt)
-    card = result.scalar_one_or_none()
 
     if not card:
         raise HTTPException(
