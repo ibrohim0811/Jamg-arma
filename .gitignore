@@ -7,6 +7,11 @@
 *.pem
 *.key
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # Dastur va paket bog'liqliklari (Dependencies)
 node_modules/
 vendor/

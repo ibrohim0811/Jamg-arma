@@ -1,8 +1,8 @@
+import uuid
 from pydantic import BaseModel, Field
 from decimal import Decimal
 from datetime import datetime
 from models.users import CommunalTypes
-# CommunalTypes ni o'zingizning enum joylashgan fayldan import qilasiz
 
 class CommunalPaymentCreate(BaseModel):
     card_id: str
@@ -12,10 +12,10 @@ class CommunalPaymentCreate(BaseModel):
     amount: Decimal = Field(..., gt=0)  # Summa 0 dan katta bo'lishi shart
 
 class CommunalPaymentResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     user_id: int
-    card_id: str
-    transaction_id: str | None
+    card_id: uuid.UUID | None
+    transaction_id: uuid.UUID | None
     service_type: CommunalTypes
     provider_name: str
     account_number: str

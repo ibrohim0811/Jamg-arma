@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel, Field, ConfigDict
 from decimal import Decimal
 from typing import Optional
@@ -41,8 +42,8 @@ class CardTopUpRequest(BaseModel):
 class CardTopUpResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    transaction_id: str
-    card_id: str
+    transaction_id: uuid.UUID
+    card_id: uuid.UUID
     amount: Decimal
     new_balance: Decimal
     status: str
