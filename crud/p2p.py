@@ -7,7 +7,7 @@ from models.users import CreditCard, Transaction, TransactionType
 from schemas.p2p import P2PTransferCreate
 from crud.card import get_user_card_by_identifier
 
-async def make_p2p_transfer(db: AsyncSession, transfer_in: P2PTransferCreate, user_id: int) -> Transaction:
+async def make_p2p_transfer(db: AsyncSession, transfer_in: P2PTransferCreate, user_id: int) -> tuple[Transaction, int]:
     # 1. Yuboruvchi kartasini tekshirish
     sender_card = await get_user_card_by_identifier(
         db=db,
@@ -56,4 +56,4 @@ async def make_p2p_transfer(db: AsyncSession, transfer_in: P2PTransferCreate, us
     await db.commit()
     await db.refresh(db_transaction)
 
-    return db_transaction
+    return db_transaction, receiver_card.user_id

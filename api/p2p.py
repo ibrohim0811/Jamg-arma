@@ -13,20 +13,24 @@ router = APIRouter(prefix="/p2p", tags=["P2P Transfers"])
 @router.post("/transfer", status_code=status.HTTP_201_CREATED)
 async def p2p_transfer(
     transfer_in: P2PTransferCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
     Kartadan kartaga pul o'tkazish (P2P)
     """
-    transaction = await p2p_crud.make_p2p_transfer(db=db, transfer_in=transfer_in, user_id=current_user.id)
+    transaction, receiver_user_id = await p2p_crud.make_p2p_transfer(
+        db=db, transfer_in=transfer_in, user_id=current_user.id
+    )
 
-    BackgroundTasks.add_task(
+    sender_name = f"{current_user.first_name} {current_user.last_name}".strip()
+    background_tasks.add_task(
         send_expo_push,
         db=db,
-        user_id=transaction,
+        user_id=receiver_user_id,
         title="Hisobingiz to'ldirildi 💸",
-        body=f"+{P2PTransferCreate.amount:,.0f} UZS • {current_user.full_name} dan",
+        body=f"+{transfer_in.amount:,.0f} UZS • {sender_name} dan",
         data={"type": "p2p_received", "transaction_id": str(transaction.id)}
     )
 
