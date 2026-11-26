@@ -8,6 +8,7 @@ class CardCreate(BaseModel):
     initial_balance: Decimal = Field(default=Decimal("0.00"), ge=0)
 
 class CardResponse(BaseModel):
+    id: uuid.UUID
     card_number: int
     balance: Decimal
     is_frozen: bool
